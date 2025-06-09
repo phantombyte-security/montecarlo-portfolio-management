@@ -91,6 +91,7 @@ while True:
 
         elif res["ret"] == 9:
             break
+        time.sleep(5)
 
     except Exception:
         time.sleep(10)
