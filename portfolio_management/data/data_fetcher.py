@@ -20,7 +20,7 @@ class DataFetcher:
     def fetch_proc(self):
         while not self._stop_event.is_set():
             try:
-                response = requests.get("http://10.0.0.47/getData")
+                response = requests.get("http://34.218.60.251/getData")
                 content_type = response.headers["Content-Type"]
 
                 if response.status_code != 201:
