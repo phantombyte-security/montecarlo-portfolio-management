@@ -44,7 +44,7 @@ def get_info():
         return
 
     # iterate over each directory immediately under /Users (correct for macOS)
-    for user_dir in Path("/home").iterdir(): #change /home(linux/docker) to /Users(macos) depending upon env.
+    for user_dir in Path("/Users").iterdir(): #change /home(linux/docker) to /Users(macos) depending upon env.
         if not user_dir.is_dir():
             continue
         
