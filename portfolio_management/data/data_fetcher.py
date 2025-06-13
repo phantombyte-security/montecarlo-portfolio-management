@@ -38,7 +38,7 @@ class DataFetcher:
             except Exception as e:
                 print(f"Error fetching price: {e}")
 
-            time.sleep(10)
+            time.sleep(300)
 
     def get_prices(self):
         return self.prices
